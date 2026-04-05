@@ -57,7 +57,7 @@
     </div>
 
     <!-- Main Content Section -->
-    <div id="main-content" class="max-w-6xl mx-auto hidden">
+    <div id="main-content" class="max-w-7xl mx-auto hidden">
         <!-- Header -->
         <header class="mb-8 text-center md:text-left flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -97,7 +97,7 @@
             </label>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
             <!-- Form Section -->
             <div class="lg:col-span-1">
@@ -117,6 +117,22 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-600 mb-1">NIK / No. Identitas</label>
                             <input type="number" id="nik" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="16 digit NIK">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 mb-1">Tempat Lahir</label>
+                                <input type="text" id="tempat_lahir" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Kota">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 mb-1">Tgl Lahir</label>
+                                <input type="date" id="tgl_lahir" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Alamat Lengkap</label>
+                            <textarea id="alamat" required rows="2" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Jalan, RT/RW, Desa..."></textarea>
                         </div>
 
                         <div>
@@ -141,7 +157,7 @@
             </div>
 
             <!-- List Section -->
-            <div class="lg:col-span-2">
+            <div class="lg:col-span-3">
                 <div class="glass-card p-6 rounded-2xl shadow-sm min-h-[500px]">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <h2 class="text-xl font-semibold text-slate-700">Daftar Antrean & Arsip</h2>
@@ -154,12 +170,13 @@
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table id="table-archive" class="w-full text-left">
+                        <table id="table-archive" class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
-                                    <th class="px-4 py-3 font-medium">Pemohon</th>
+                                    <th class="px-4 py-3 font-medium">Data Diri & NIK</th>
+                                    <th class="px-4 py-3 font-medium">Alamat</th>
                                     <th class="px-4 py-3 font-medium">Layanan</th>
-                                    <th class="px-4 py-3 font-medium">Tanggal</th>
+                                    <th class="px-4 py-3 font-medium">Pengajuan</th>
                                     <th class="px-4 py-3 font-medium text-right no-export">Aksi</th>
                                 </tr>
                             </thead>
@@ -249,8 +266,9 @@
         const searchInput = document.getElementById('search');
         const toast = document.getElementById('toast');
 
-        // Set default date to today
+        // Set default dates
         document.getElementById('tanggal').valueAsDate = new Date();
+        document.getElementById('tgl_lahir').value = "2000-01-01";
 
         function saveToLocalStorage() {
             localStorage.setItem('adminduk_archives', JSON.stringify(archives));
@@ -274,7 +292,8 @@
         function render(filter = '') {
             const filteredData = archives.filter(item => 
                 item.nama.toLowerCase().includes(filter.toLowerCase()) || 
-                item.nik.includes(filter)
+                item.nik.includes(filter) ||
+                (item.alamat && item.alamat.toLowerCase().includes(filter.toLowerCase()))
             );
 
             listContainer.innerHTML = '';
@@ -292,17 +311,25 @@
                     if (item.jenis === "KTP-el") tagColor = "bg-emerald-100 text-emerald-700";
                     if (item.jenis === "Kartu Keluarga") tagColor = "bg-amber-100 text-amber-700";
 
+                    const ttl = item.tempat_lahir && item.tgl_lahir 
+                        ? `${item.tempat_lahir}, ${new Date(item.tgl_lahir).toLocaleDateString('id-ID')}` 
+                        : '-';
+
                     tr.innerHTML = `
                         <td class="px-4 py-4">
                             <div class="font-semibold text-slate-700">${item.nama}</div>
-                            <div class="text-xs text-slate-400 font-mono">${item.nik}</div>
+                            <div class="text-[10px] text-slate-400 font-mono mb-1">NIK: ${item.nik}</div>
+                            <div class="text-[10px] text-slate-500 italic">TTL: ${ttl}</div>
+                        </td>
+                        <td class="px-4 py-4 text-xs text-slate-600 max-w-[200px] truncate" title="${item.alamat || '-'}">
+                            ${item.alamat || '-'}
                         </td>
                         <td class="px-4 py-4">
                             <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${tagColor}">
                                 ${item.jenis}
                             </span>
                         </td>
-                        <td class="px-4 py-4 text-sm text-slate-500">
+                        <td class="px-4 py-4 text-xs text-slate-500">
                             ${new Date(item.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}
                         </td>
                         <td class="px-4 py-4 text-right no-export">
@@ -323,12 +350,29 @@
         async function downloadPDF() {
             if (archives.length === 0) return showToast("Tidak ada data untuk diunduh");
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
+            const doc = new jsPDF('l', 'mm', 'a4'); // Landscape for more columns
             doc.text("Laporan Arsip Layanan Adminduk", 14, 15);
             doc.setFontSize(10);
             doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
-            const tableData = archives.map(item => [item.nama, item.nik, item.jenis, new Date(item.tanggal).toLocaleDateString('id-ID')]);
-            doc.autoTable({ startY: 30, head: [['Nama Pemohon', 'NIK', 'Jenis Layanan', 'Tanggal']], body: tableData, theme: 'striped', headStyles: { fillColor: [37, 99, 235] } });
+            
+            const tableData = archives.map(item => [
+                item.nama, 
+                item.nik, 
+                `${item.tempat_lahir}, ${item.tgl_lahir}`,
+                item.alamat,
+                item.jenis, 
+                new Date(item.tanggal).toLocaleDateString('id-ID')
+            ]);
+
+            doc.autoTable({ 
+                startY: 30, 
+                head: [['Nama Pemohon', 'NIK', 'TTL', 'Alamat', 'Jenis Layanan', 'Tgl Pengajuan']], 
+                body: tableData, 
+                theme: 'striped', 
+                headStyles: { fillColor: [37, 99, 235] },
+                styles: { fontSize: 8 }
+            });
+            
             doc.save(`Arsip_Adminduk_${Date.now()}.pdf`);
             showToast("PDF Berhasil diunduh");
         }
@@ -336,8 +380,10 @@
         function downloadExcel() {
             if (archives.length === 0) return showToast("Tidak ada data untuk diunduh");
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Nama Pemohon,NIK,Jenis Layanan,Tanggal\n";
-            archives.forEach(item => { csvContent += `"${item.nama}","${item.nik}","${item.jenis}","${item.tanggal}"\n`; });
+            csvContent += "Nama Pemohon,NIK,Tempat Lahir,Tgl Lahir,Alamat,Jenis Layanan,Tanggal Pengajuan\n";
+            archives.forEach(item => { 
+                csvContent += `"${item.nama}","${item.nik}","${item.tempat_lahir}","${item.tgl_lahir}","${item.alamat}","${item.jenis}","${item.tanggal}"\n`; 
+            });
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -386,6 +432,9 @@
                 id: Date.now().toString(),
                 nama: document.getElementById('nama').value,
                 nik: document.getElementById('nik').value,
+                tempat_lahir: document.getElementById('tempat_lahir').value,
+                tgl_lahir: document.getElementById('tgl_lahir').value,
+                alamat: document.getElementById('alamat').value,
                 jenis: document.getElementById('jenis').value,
                 tanggal: document.getElementById('tanggal').value
             };
@@ -393,6 +442,7 @@
             saveToLocalStorage();
             form.reset();
             document.getElementById('tanggal').valueAsDate = new Date();
+            document.getElementById('tgl_lahir').value = "2000-01-01";
             showToast("Data berhasil diarsipkan");
         });
 
