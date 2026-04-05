@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Arsip Layanan Adminduk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Library untuk PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Login Section -->
+    <div id="login-section" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-50 backdrop-blur-sm">
+        <div class="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Login Sistem</h2>
+                <p class="text-slate-500">Silakan masuk untuk akses arsip</p>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Username</label>
+                    <input type="text" id="username" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Masukkan username">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="password" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Masukkan password">
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                            <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="login-error" class="hidden text-red-500 text-sm text-center font-medium">Username atau Password salah!</div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md transition transform active:scale-95">
+                    Masuk Sekarang
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content Section -->
+    <div id="main-content" class="max-w-6xl mx-auto hidden">
+        <!-- Header -->
+        <header class="mb-8 text-center md:text-left flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">Arsip Layanan Adminduk</h1>
+                <p class="text-slate-500">Pencatatan Akta Kelahiran, KTP, dan Kartu Keluarga</p>
+            </div>
+            <div class="flex flex-wrap gap-2 justify-center items-center">
+                <div class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm">
+                    <span id="stats-total" class="block text-2xl font-bold text-center">0</span>
+                    <span class="text-xs uppercase opacity-80">Total Berkas</span>
+                </div>
+                <button onclick="logout()" class="bg-slate-200 hover:bg-red-100 hover:text-red-600 text-slate-600 px-4 py-2 rounded-lg transition font-medium flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Action Toolbar -->
+        <div class="mb-6 flex flex-wrap gap-3 justify-center md:justify-end">
+            <button onclick="downloadPDF()" class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Unduh PDF
+            </button>
+            <button onclick="downloadExcel()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Unduh Excel
+            </button>
+            <button onclick="exportBackup()" class="flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                Backup
+            </button>
+            <label class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                Restore
+                <input type="file" id="restore-file" class="hidden" accept=".json" onchange="importBackup(event)">
+            </label>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Form Section -->
+            <div class="lg:col-span-1">
+                <div class="glass-card p-6 rounded-2xl shadow-sm sticky top-8">
+                    <h2 class="text-xl font-semibold mb-4 text-slate-700 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        Input Data Baru
+                    </h2>
+                    <form id="adminduk-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Nama Lengkap</label>
+                            <input type="text" id="nama" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Contoh: Budi Santoso">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">NIK / No. Identitas</label>
+                            <input type="number" id="nik" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="16 digit NIK">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Jenis Layanan</label>
+                            <select id="jenis" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                                <option value="Akta Kelahiran">Akta Kelahiran</option>
+                                <option value="KTP-el">KTP Elektronik</option>
+                                <option value="Kartu Keluarga">Kartu Keluarga (KK)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Tanggal Pengajuan</label>
+                            <input type="date" id="tanggal" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md transition transform active:scale-95">
+                            Simpan ke Arsip
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- List Section -->
+            <div class="lg:col-span-2">
+                <div class="glass-card p-6 rounded-2xl shadow-sm min-h-[500px]">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <h2 class="text-xl font-semibold text-slate-700">Daftar Antrean & Arsip</h2>
+                        <div class="relative">
+                            <input type="text" id="search" placeholder="Cari nama atau NIK..." class="pl-10 pr-4 py-2 rounded-full bg-slate-100 border-none focus:ring-2 focus:ring-blue-500 text-sm w-full md:w-64">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table id="table-archive" class="w-full text-left">
+                            <thead>
+                                <tr class="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
+                                    <th class="px-4 py-3 font-medium">Pemohon</th>
+                                    <th class="px-4 py-3 font-medium">Layanan</th>
+                                    <th class="px-4 py-3 font-medium">Tanggal</th>
+                                    <th class="px-4 py-3 font-medium text-right no-export">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="archive-list" class="divide-y divide-slate-50">
+                                <!-- Data will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="empty-state" class="hidden py-20 text-center">
+                        <div class="text-slate-300 mb-3 text-6xl">📭</div>
+                        <p class="text-slate-400">Belum ada data arsip.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="toast" class="fixed bottom-4 right-4 transform translate-y-20 transition-transform duration-300 ease-in-out bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3">
+        <span id="toast-msg">Pesan berhasil dikirim</span>
+    </div>
+
+    <script>
+        // --- AUTH SYSTEM ---
+        const VALID_USER = "Kliwon03";
+        const VALID_PASS = "Balaidesa03";
+
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                eyeIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                `;
+            } else {
+                passInput.type = "password";
+                eyeIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                `;
+            }
+        }
+
+        function checkAuth() {
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                render();
+            }
+        }
+
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const error = document.getElementById('login-error');
+
+            if (u === VALID_USER && p === VALID_PASS) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                error.classList.add('hidden');
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                showToast("Selamat datang, Admin!");
+                render();
+            } else {
+                error.classList.remove('hidden');
+                document.getElementById('password').value = '';
+            }
+        });
+
+        function logout() {
+            sessionStorage.removeItem('isLoggedIn');
+            location.reload();
+        }
+
+        // --- State Management ---
+        let archives = JSON.parse(localStorage.getItem('adminduk_archives')) || [];
+
+        // Elements
+        const form = document.getElementById('adminduk-form');
+        const listContainer = document.getElementById('archive-list');
+        const emptyState = document.getElementById('empty-state');
+        const statsTotal = document.getElementById('stats-total');
+        const searchInput = document.getElementById('search');
+        const toast = document.getElementById('toast');
+
+        // Set default date to today
+        document.getElementById('tanggal').valueAsDate = new Date();
+
+        function saveToLocalStorage() {
+            localStorage.setItem('adminduk_archives', JSON.stringify(archives));
+            render();
+        }
+
+        function showToast(msg) {
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('translate-y-20');
+            setTimeout(() => toast.classList.add('translate-y-20'), 3000);
+        }
+
+        function deleteEntry(id) {
+            if(confirm("Hapus data ini?")) {
+                archives = archives.filter(item => item.id !== id);
+                saveToLocalStorage();
+                showToast("Data dihapus");
+            }
+        }
+
+        function render(filter = '') {
+            const filteredData = archives.filter(item => 
+                item.nama.toLowerCase().includes(filter.toLowerCase()) || 
+                item.nik.includes(filter)
+            );
+
+            listContainer.innerHTML = '';
+            statsTotal.innerText = archives.length;
+
+            if (filteredData.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filteredData.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition-colors group";
+                    
+                    let tagColor = "bg-blue-100 text-blue-700";
+                    if (item.jenis === "KTP-el") tagColor = "bg-emerald-100 text-emerald-700";
+                    if (item.jenis === "Kartu Keluarga") tagColor = "bg-amber-100 text-amber-700";
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-4">
+                            <div class="font-semibold text-slate-700">${item.nama}</div>
+                            <div class="text-xs text-slate-400 font-mono">${item.nik}</div>
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${tagColor}">
+                                ${item.jenis}
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 text-sm text-slate-500">
+                            ${new Date(item.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}
+                        </td>
+                        <td class="px-4 py-4 text-right no-export">
+                            <button onclick="deleteEntry('${item.id}')" class="text-slate-300 hover:text-red-500 transition p-2 rounded-lg hover:bg-red-50">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </td>
+                    `;
+                    listContainer.appendChild(tr);
+                });
+            }
+        }
+
+        // --- Fitur Export/Import ---
+
+        async function downloadPDF() {
+            if (archives.length === 0) return showToast("Tidak ada data untuk diunduh");
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            doc.text("Laporan Arsip Layanan Adminduk", 14, 15);
+            doc.setFontSize(10);
+            doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+            const tableData = archives.map(item => [item.nama, item.nik, item.jenis, new Date(item.tanggal).toLocaleDateString('id-ID')]);
+            doc.autoTable({ startY: 30, head: [['Nama Pemohon', 'NIK', 'Jenis Layanan', 'Tanggal']], body: tableData, theme: 'striped', headStyles: { fillColor: [37, 99, 235] } });
+            doc.save(`Arsip_Adminduk_${Date.now()}.pdf`);
+            showToast("PDF Berhasil diunduh");
+        }
+
+        function downloadExcel() {
+            if (archives.length === 0) return showToast("Tidak ada data untuk diunduh");
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Nama Pemohon,NIK,Jenis Layanan,Tanggal\n";
+            archives.forEach(item => { csvContent += `"${item.nama}","${item.nik}","${item.jenis}","${item.tanggal}"\n`; });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Arsip_Adminduk_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("File Excel (CSV) Berhasil diunduh");
+        }
+
+        function exportBackup() {
+            if (archives.length === 0) return showToast("Data kosong");
+            const dataStr = JSON.stringify(archives, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', `backup_adminduk_${Date.now()}.json`);
+            linkElement.click();
+            showToast("Backup berhasil diunduh");
+        }
+
+        function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        if(confirm(`Timpa data lama dengan ${importedData.length} data?`)) {
+                            archives = importedData;
+                            saveToLocalStorage();
+                            showToast("Data berhasil direstore");
+                        }
+                    }
+                } catch (err) { showToast("Gagal membaca file"); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // --- Main Listeners ---
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newEntry = {
+                id: Date.now().toString(),
+                nama: document.getElementById('nama').value,
+                nik: document.getElementById('nik').value,
+                jenis: document.getElementById('jenis').value,
+                tanggal: document.getElementById('tanggal').value
+            };
+            archives.unshift(newEntry);
+            saveToLocalStorage();
+            form.reset();
+            document.getElementById('tanggal').valueAsDate = new Date();
+            showToast("Data berhasil diarsipkan");
+        });
+
+        searchInput.addEventListener('input', (e) => render(e.target.value));
+
+        // Start Auth Check
+        window.onload = checkAuth;
+
+    </script>
+</body>
+</html>
