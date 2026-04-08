@@ -127,8 +127,8 @@
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-slate-600 mb-1">NIK / No. Identitas</label>
-                            <input type="number" id="nik" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="16 digit NIK">
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Nomor Urut</label>
+                            <input type="number" id="nik" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Masukkan Nomor Urut">
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
@@ -137,8 +137,11 @@
                                 <input type="text" id="tempat_lahir" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="Kota">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">Tgl Lahir</label>
-                                <input type="date" id="tgl_lahir" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                                <label class="block text-sm font-medium text-slate-600 mb-1">Jenis Kelamin</label>
+                                <select id="tgl_lahir" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                                    <option value="Laki-laki">Laki-laki</option>
+                                    <option value="Perempuan">Perempuan</option>
+                                </select>
                             </div>
                         </div>
 
@@ -200,7 +203,7 @@
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <h2 class="text-xl font-semibold text-slate-700">Daftar Antrean & Arsip</h2>
                         <div class="relative">
-                            <input type="text" id="search" placeholder="Cari nama, NIK, atau alamat..." class="pl-10 pr-4 py-2 rounded-full bg-slate-100 border-none focus:ring-2 focus:ring-blue-500 text-sm w-full md:w-64">
+                            <input type="text" id="search" placeholder="Cari nama, urut, atau alamat..." class="pl-10 pr-4 py-2 rounded-full bg-slate-100 border-none focus:ring-2 focus:ring-blue-500 text-sm w-full md:w-64">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
@@ -211,7 +214,7 @@
                         <table id="table-archive" class="w-full text-left border-collapse min-w-[1000px]">
                             <thead>
                                 <tr class="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
-                                    <th class="px-4 py-3 font-medium">Data Diri & NIK</th>
+                                    <th class="px-4 py-3 font-medium">Data Diri & Nomor Urut</th>
                                     <th class="px-4 py-3 font-medium">Alamat</th>
                                     <th class="px-4 py-3 font-medium">Layanan & Status</th>
                                     <th class="px-4 py-3 font-medium">Pembayaran</th>
@@ -310,10 +313,7 @@
         function setDefaultDates() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('tanggal').value = today;
-            // Hanya set tgl_lahir default jika belum ada isinya
-            if(!document.getElementById('tgl_lahir').value) {
-                document.getElementById('tgl_lahir').value = "2000-01-01";
-            }
+            // Hanya set tgl_lahir default jika belum ada isinya (sekarang Jadi Jenis Kelamin, maka kita set default option)
         }
 
         // Jalankan set tanggal saat load
@@ -372,15 +372,14 @@
                     // Warna Tag Pembayaran
                     let bayarColor = item.pembayaran === "Lunas" ? "bg-green-100 text-green-700 border-green-200" : "bg-orange-100 text-orange-700 border-orange-200";
 
-                    const ttl = item.tempat_lahir && item.tgl_lahir 
-                        ? `${item.tempat_lahir}, ${new Date(item.tgl_lahir).toLocaleDateString('id-ID')}` 
-                        : '-';
+                    // Interpretasi data TTL menjadi JK
+                    const jkInfo = item.tgl_lahir || '-';
 
                     tr.innerHTML = `
                         <td class="px-4 py-4">
                             <div class="font-semibold text-slate-700 text-sm">${item.nama}</div>
-                            <div class="text-[10px] text-slate-400 font-mono mb-1">NIK: ${item.nik}</div>
-                            <div class="text-[10px] text-slate-500 italic">TTL: ${ttl}</div>
+                            <div class="text-[10px] text-slate-400 font-mono mb-1">NO. URUT: ${item.nik}</div>
+                            <div class="text-[10px] text-slate-500 italic">JK: ${jkInfo}</div>
                         </td>
                         <td class="px-4 py-4 text-xs text-slate-600 max-w-[180px] whitespace-normal leading-relaxed">
                             ${item.alamat || '-'}
@@ -442,7 +441,7 @@
 
             doc.autoTable({ 
                 startY: 30, 
-                head: [['Nama', 'NIK', 'Alamat', 'Layanan', 'Status', 'Pembayaran', 'Keterangan', 'Tgl Pengajuan']], 
+                head: [['Nama', 'Nomor Urut', 'Alamat', 'Layanan', 'Status', 'Pembayaran', 'Keterangan', 'Tgl Pengajuan']], 
                 body: tableData, 
                 theme: 'striped', 
                 headStyles: { fillColor: [37, 99, 235] },
@@ -456,7 +455,7 @@
         function downloadExcel() {
             if (archives.length === 0) return showToast("Tidak ada data untuk diunduh");
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Nama Pemohon,NIK,Tempat Lahir,Tgl Lahir,Alamat,Jenis Layanan,Status,Pembayaran,Keterangan,Tanggal Pengajuan\n";
+            csvContent += "Nama Pemohon,Nomor Urut,Tempat Lahir,Jenis Kelamin,Alamat,Jenis Layanan,Status,Pembayaran,Keterangan,Tanggal Pengajuan\n";
             archives.forEach(item => { 
                 csvContent += `"${item.nama}","${item.nik}","${item.tempat_lahir}","${item.tgl_lahir}","${item.alamat}","${item.jenis}","${item.status}","${item.pembayaran}","${item.keterangan}","${item.tanggal}"\n`; 
             });
