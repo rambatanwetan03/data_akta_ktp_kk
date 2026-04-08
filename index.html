@@ -306,9 +306,18 @@
         const searchInput = document.getElementById('search');
         const toast = document.getElementById('toast');
 
-        // Set default dates
-        document.getElementById('tanggal').valueAsDate = new Date();
-        document.getElementById('tgl_lahir').value = "2000-01-01";
+        // Fungsi Helper untuk Set Tanggal Hari Ini secara Otomatis
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('tanggal').value = today;
+            // Hanya set tgl_lahir default jika belum ada isinya
+            if(!document.getElementById('tgl_lahir').value) {
+                document.getElementById('tgl_lahir').value = "2000-01-01";
+            }
+        }
+
+        // Jalankan set tanggal saat load
+        setDefaultDates();
 
         function saveToLocalStorage() {
             localStorage.setItem('adminduk_archives', JSON.stringify(archives));
@@ -511,8 +520,8 @@
             archives.unshift(newEntry);
             saveToLocalStorage();
             form.reset();
-            document.getElementById('tanggal').valueAsDate = new Date();
-            document.getElementById('tgl_lahir').value = "2000-01-01";
+            // Reset tanggal ke hari ini setelah form reset
+            setDefaultDates();
             showToast("Data berhasil diarsipkan");
         });
 
